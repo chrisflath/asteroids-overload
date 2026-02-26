@@ -48,16 +48,26 @@ let score=0, lives=3, wave=1;
 let hiScore = +localStorage.getItem('astro_hi')||0;
 let novaTimer=0, waveClearTimer=0;
 
+const SHIELD_MAX = {f:2, r:1, b:1, l:1};
 const ship = {
   x:0,y:0,vx:0,vy:0, angle:-Math.PI/2,
-  invincible:0, thrust:false, shield:0,
+  invincible:0, thrust:false, shield:{f:0,r:0,b:0,l:0},
   weapon:'laser', ammo:{}, fireCd:0, beaming:false,
   reset() {
     this.x=W/2; this.y=H/2; this.vx=0; this.vy=0;
-    this.angle=-Math.PI/2; this.invincible=3; this.thrust=false; this.shield=0;
+    this.angle=-Math.PI/2; this.invincible=3; this.thrust=false;
+    this.shield={f:0,r:0,b:0,l:0};
     this.weapon='laser'; this.ammo={}; this.fireCd=0; this.beaming=false;
   }
 };
+function shieldQuadrant(ax,ay) {
+  let rel = Math.atan2(ay-ship.y, ax-ship.x) - ship.angle;
+  while(rel>Math.PI) rel-=Math.PI*2; while(rel<-Math.PI) rel+=Math.PI*2;
+  if(rel>-Math.PI/4 && rel<=Math.PI/4)  return 'f';
+  if(rel>Math.PI/4  && rel<=3*Math.PI/4) return 'r';
+  if(rel>-3*Math.PI/4 && rel<=-Math.PI/4) return 'l';
+  return 'b';
+}
 
 let asteroids=[], bullets=[], pickups=[], particles=[];
 
@@ -595,11 +605,12 @@ function update(dt) {
   else {
     for(const a of asteroids){
       if(Math.hypot(ship.x-a.x,ship.y-a.y)<a.r+11){
-        if(ship.shield>0){
-          ship.shield--;
-          ship.invincible=1.8;
+        const q=shieldQuadrant(a.x,a.y);
+        if(ship.shield[q]>0){
+          ship.shield[q]--;
+          ship.invincible=1.5;
           sndShieldHit();
-          explode(ship.x,ship.y,14,120,'#44ffff',0.6,2);
+          explode(ship.x,ship.y,10,100,'#44cc44',0.5,2);
         } else { killShip(); }
         break;
       }
@@ -642,7 +653,7 @@ function killShip() {
 function collectPickup(type) {
   sndPickup(type);
   if(type==='nova'){ activateNova(); return; }
-  if(type==='shield'){ ship.shield=Math.min(ship.shield+3,9); explode(ship.x,ship.y,10,90,'#44ffff',0.5,2); return; }
+  if(type==='shield'){ for(const q in SHIELD_MAX) ship.shield[q]=SHIELD_MAX[q]; explode(ship.x,ship.y,10,90,'#44cc44',0.5,2); return; }
   const def=WD[type];
   ship.weapon=type;
   ship.ammo[type]=def.ammo+(ship.ammo[type]??0);
@@ -697,30 +708,37 @@ function render() {
 }
 
 function renderShip() {
+  const sr=26, gap=0.10, P=Math.PI;
+  // ── Shield arcs (drawn always — visible even during invincibility blink) ──
+  const s=ship.shield, hasShield=s.f||s.r||s.b||s.l;
+  if(hasShield){
+    ctx.save(); ctx.translate(ship.x,ship.y); ctx.rotate(ship.angle);
+    const pulse=0.55+0.45*Math.sin(Date.now()*0.007);
+    ctx.strokeStyle=`rgba(40,200,70,${0.55+0.35*pulse})`; ctx.lineWidth=2.5;
+    // Front: two half-arcs (-π/4..0  and  0..π/4)
+    if(s.f>=1){ ctx.beginPath(); ctx.arc(0,0,sr,-P/4+gap,    -gap);         ctx.stroke(); }
+    if(s.f>=2){ ctx.beginPath(); ctx.arc(0,0,sr, gap,          P/4-gap);    ctx.stroke(); }
+    // Starboard
+    if(s.r>0){  ctx.beginPath(); ctx.arc(0,0,sr, P/4+gap,     3*P/4-gap);  ctx.stroke(); }
+    // Back
+    if(s.b>0){  ctx.beginPath(); ctx.arc(0,0,sr, 3*P/4+gap,   5*P/4-gap);  ctx.stroke(); }
+    // Port
+    if(s.l>0){  ctx.beginPath(); ctx.arc(0,0,sr,-3*P/4+gap,  -P/4-gap);   ctx.stroke(); }
+    ctx.restore();
+  }
+  // ── Ship hull (blinks when invincible) ────────────────────────────────────
   if(ship.invincible>0 && Math.floor(ship.invincible*8)%2===0) return;
   ctx.save(); ctx.translate(ship.x,ship.y); ctx.rotate(ship.angle);
-  // Flame
   if(ship.thrust){
     ctx.beginPath(); ctx.moveTo(-13,-5); ctx.lineTo(-20-Math.random()*14,0); ctx.lineTo(-13,5);
     ctx.strokeStyle=`rgba(255,${150+Math.random()*100|0},30,0.85)`; ctx.lineWidth=3; ctx.stroke();
   }
-  // Hull
   ctx.beginPath(); ctx.moveTo(16,0); ctx.lineTo(-12,-10); ctx.lineTo(-7,0); ctx.lineTo(-12,10); ctx.closePath();
   ctx.strokeStyle='#ddd'; ctx.lineWidth=2; ctx.stroke();
   ctx.fillStyle='rgba(255,255,255,0.06)'; ctx.fill();
-  // Invincibility ring
-  if(ship.invincible>0 && ship.shield===0){
+  if(ship.invincible>0 && !hasShield){
     ctx.beginPath(); ctx.arc(0,0,20,0,Math.PI*2);
     ctx.strokeStyle=`rgba(100,200,255,${0.4+0.2*Math.sin(Date.now()*0.01)})`; ctx.lineWidth=2; ctx.stroke();
-  }
-  // Shield bubble — pulsing cyan, thickness scales with charges
-  if(ship.shield>0){
-    const pulse=0.5+0.5*Math.sin(Date.now()*0.006);
-    const r=22+ship.shield*1.5;
-    ctx.beginPath(); ctx.arc(0,0,r,0,Math.PI*2);
-    ctx.strokeStyle=`rgba(68,255,255,${0.5+0.35*pulse})`; ctx.lineWidth=1.5+ship.shield*0.4; ctx.stroke();
-    ctx.beginPath(); ctx.arc(0,0,r+4,0,Math.PI*2);
-    ctx.strokeStyle=`rgba(68,255,255,${0.15*pulse})`; ctx.lineWidth=6; ctx.stroke();
   }
   ctx.restore();
 }
@@ -781,7 +799,7 @@ function renderBullets() {
   ctx.shadowBlur=0; ctx.restore();
 }
 
-const PICKUP_META = { shield:{ col:'#44ffff', label:'SHD' } };
+const PICKUP_META = { shield:{ col:'#1a8a2a', label:'SHD' } };
 function pickupDef(type){ return PICKUP_META[type] ?? { col: WD[type]?.col??'#fff', label: type.slice(0,3).toUpperCase() }; }
 
 function renderPickups() {
@@ -833,15 +851,10 @@ function renderHUD() {
   ctx.fillText('♥'.repeat(lives),W-14,24);
 
   // Shield charges
-  if(ship.shield>0){
-    ctx.fillStyle='#44ffff';
-    ctx.fillText('⬡'.repeat(ship.shield),W-14,40);
-  }
-
   // Music toggle
   ctx.fillStyle=musicOn?'#aaa':'#444';
   ctx.font=`${fs}px 'Courier New',monospace`;
-  ctx.fillText(musicOn?'♪':'♪',W-14,ship.shield>0?56:44);
+  ctx.fillText(musicOn?'♪':'♪',W-14,40);
 
   // Weapon + ammo — centered at top below wave
   const def=WD[ship.weapon];
