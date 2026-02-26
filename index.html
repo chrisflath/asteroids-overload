@@ -521,9 +521,21 @@ function update(dt) {
 
   // ── COLLISION: bullets vs asteroids ─────────────────────────
   const killBullets=new Set(), killAsts=new Set(), newAsts=[];
+  function processAstKill(ai2){
+    if(killAsts.has(ai2)) return;
+    killAsts.add(ai2);
+    const ak=asteroids[ai2];
+    score+=scoreAst(ak); if(score>hiScore) hiScore=score;
+    sndExplosion(ak.size);
+    explode(ak.x,ak.y,7*ak.size,65*ak.size,'#f84',0.5*ak.size,2);
+    explode(ak.x,ak.y,4*ak.size,30*ak.size,'#fff',0.2*ak.size,1);
+    if(ak.size>1) spawnChildren(ak,newAsts);
+    maybeDropPickup(ak);
+  }
   for(let bi=0;bi<bullets.length;bi++){
     const b=bullets[bi];
     for(let ai=0;ai<asteroids.length;ai++){
+      if(killAsts.has(ai)) continue;  // skip already-dead asteroids
       const a=asteroids[ai];
       if(Math.hypot(b.x-a.x,b.y-a.y)<a.r+b.sz){
         if(!b.pierce) killBullets.add(bi);
@@ -531,22 +543,17 @@ function update(dt) {
         a.hp-=b.dmg;
         // plasma AoE splash
         if(b.aoe>0) {
-          for(const a2 of asteroids) {
-            if(a2!==a && Math.hypot(b.x-a2.x,b.y-a2.y)<b.aoe) {
+          for(let ai2=0;ai2<asteroids.length;ai2++){
+            if(ai2===ai || killAsts.has(ai2)) continue;
+            const a2=asteroids[ai2];
+            if(Math.hypot(b.x-a2.x,b.y-a2.y)<b.aoe) {
               a2.hp-=b.dmg*0.6;
               explode(a2.x,a2.y,3,40,'#f94',0.2,2);
+              if(a2.hp<=0) processAstKill(ai2);  // no zombie asteroids
             }
           }
         }
-        if(a.hp<=0 && !killAsts.has(ai)){   // guard: only process each asteroid once
-          killAsts.add(ai);
-          score+=scoreAst(a); if(score>hiScore) hiScore=score;
-          sndExplosion(a.size);
-          explode(a.x,a.y,7*a.size,65*a.size,'#f84',0.5*a.size,2);
-          explode(a.x,a.y,4*a.size,30*a.size,'#fff',0.2*a.size,1);
-          if(a.size>1) spawnChildren(a,newAsts);
-          maybeDropPickup(a);
-        }
+        if(a.hp<=0) processAstKill(ai);
         if(!b.pierce) break;
       }
     }
@@ -690,6 +697,7 @@ function renderBeam() {
 
 function renderAsteroids() {
   for(const a of asteroids){
+    if(!a || !a.shape || !a.shape.length) continue;
     ctx.save(); ctx.translate(a.x,a.y); ctx.rotate(a.angle);
     ctx.beginPath();
     ctx.moveTo(a.shape[0][0],a.shape[0][1]);
