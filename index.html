@@ -714,16 +714,17 @@ function renderShip() {
   if(hasShield){
     ctx.save(); ctx.translate(ship.x,ship.y); ctx.rotate(ship.angle);
     const pulse=0.55+0.45*Math.sin(Date.now()*0.007);
-    ctx.strokeStyle=`rgba(40,200,70,${0.55+0.35*pulse})`; ctx.lineWidth=2.5;
-    // Front: two half-arcs (-π/4..0  and  0..π/4)
-    if(s.f>=1){ ctx.beginPath(); ctx.arc(0,0,sr,-P/4+gap,    -gap);         ctx.stroke(); }
-    if(s.f>=2){ ctx.beginPath(); ctx.arc(0,0,sr, gap,          P/4-gap);    ctx.stroke(); }
+    const col=`rgba(40,200,70,${0.60+0.35*pulse})`;
+    ctx.lineWidth=4; ctx.strokeStyle=col;
+    // Front: stacked concentric arcs — outer at sr+5 for 2nd charge
+    if(s.f>=1){ ctx.beginPath(); ctx.arc(0,0,sr,    -P/4+gap, P/4-gap); ctx.stroke(); }
+    if(s.f>=2){ ctx.beginPath(); ctx.arc(0,0,sr+6,  -P/4+gap, P/4-gap); ctx.stroke(); }
     // Starboard
-    if(s.r>0){  ctx.beginPath(); ctx.arc(0,0,sr, P/4+gap,     3*P/4-gap);  ctx.stroke(); }
+    if(s.r>0){  ctx.beginPath(); ctx.arc(0,0,sr, P/4+gap,    3*P/4-gap); ctx.stroke(); }
     // Back
-    if(s.b>0){  ctx.beginPath(); ctx.arc(0,0,sr, 3*P/4+gap,   5*P/4-gap);  ctx.stroke(); }
+    if(s.b>0){  ctx.beginPath(); ctx.arc(0,0,sr, 3*P/4+gap,  5*P/4-gap); ctx.stroke(); }
     // Port
-    if(s.l>0){  ctx.beginPath(); ctx.arc(0,0,sr,-3*P/4+gap,  -P/4-gap);   ctx.stroke(); }
+    if(s.l>0){  ctx.beginPath(); ctx.arc(0,0,sr,-3*P/4+gap, -P/4-gap);  ctx.stroke(); }
     ctx.restore();
   }
   // ── Ship hull (blinks when invincible) ────────────────────────────────────
