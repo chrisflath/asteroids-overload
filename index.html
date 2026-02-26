@@ -24,14 +24,14 @@ window.addEventListener('resize', resize);
 // ── WEAPON DEFINITIONS ───────────────────────────────────────────────────────
 // dmg per shot, cd = cooldown secs, ammo = shots, spd = bullet speed px/s
 const WD = {
-  laser:  { name:'LASER',       col:'#5ef', shots:1, spread:0,    spd:640, sz:3,  dmg:1,   cd:0.22, ammo:Infinity },
-  rapid:  { name:'RAPID FIRE',  col:'#7df', shots:1, spread:0,    spd:820, sz:2,  dmg:1,   cd:0.07, ammo:120 },
-  twin:   { name:'TWIN SHOT',   col:'#4f9', shots:2, spread:0,    spd:660, sz:3,  dmg:1,   cd:0.20, ammo:80  },
-  spread: { name:'SPREAD SHOT', col:'#ff4', shots:3, spread:0.30, spd:580, sz:3,  dmg:1,   cd:0.25, ammo:60  },
-  plasma: { name:'PLASMA GUN',  col:'#f94', shots:1, spread:0,    spd:270, sz:17, dmg:2,   cd:0.55, ammo:30, pierce:true, aoe:90 },
-  seeker: { name:'SEEKERS',     col:'#f4f', shots:1, spread:0,    spd:330, sz:5,  dmg:2,   cd:0.65, ammo:14, homing:true },
-  beam:   { name:'LASER BEAM',  col:'#f33', shots:0, spread:0,    spd:0,   sz:3,  dmg:0.4, cd:0,    ammo:200, beam:true  },
-  nova:   { name:'NOVA BOMB',   col:'#fff', shots:0, spread:0,    spd:0,   sz:0,  dmg:99,  cd:0,    ammo:1,   nova:true  },
+  laser:  { name:'LASER',       col:'#55eeff', shots:1, spread:0,    spd:640, sz:3,  dmg:1,   cd:0.22, ammo:Infinity },
+  rapid:  { name:'RAPID FIRE',  col:'#77ddff', shots:1, spread:0,    spd:820, sz:2,  dmg:1,   cd:0.07, ammo:120 },
+  twin:   { name:'TWIN SHOT',   col:'#44ff99', shots:2, spread:0,    spd:660, sz:3,  dmg:1,   cd:0.20, ammo:80  },
+  spread: { name:'SPREAD SHOT', col:'#ffff44', shots:3, spread:0.30, spd:580, sz:3,  dmg:1,   cd:0.25, ammo:60  },
+  plasma: { name:'PLASMA GUN',  col:'#ff9944', shots:1, spread:0,    spd:270, sz:17, dmg:2,   cd:0.55, ammo:30, pierce:true, aoe:90 },
+  seeker: { name:'SEEKERS',     col:'#ff44ff', shots:1, spread:0,    spd:330, sz:5,  dmg:2,   cd:0.65, ammo:14, homing:true },
+  beam:   { name:'LASER BEAM',  col:'#ff3333', shots:0, spread:0,    spd:0,   sz:3,  dmg:0.4, cd:0,    ammo:200, beam:true  },
+  nova:   { name:'NOVA BOMB',   col:'#ffffff', shots:0, spread:0,    spd:0,   sz:0,  dmg:99,  cd:0,    ammo:1,   nova:true  },
 };
 
 const PICKUP_TABLE = [['rapid',28],['twin',23],['spread',18],['plasma',14],['seeker',10],['beam',6],['nova',1]];
@@ -915,20 +915,9 @@ function renderVirtualButtons() {
 let lastT=0;
 function loop(t) {
   const dt=Math.min((t-lastT)/1000,0.05); lastT=t;
-  try {
-    if(state==='playing')   update(dt);
-    if(state==='waveclear') updateWaveClear(dt);
-    render();
-  } catch(e) {
-    // Show crash on screen so we can diagnose
-    ctx.fillStyle='#000'; ctx.fillRect(0,0,W,H);
-    ctx.fillStyle='#f44'; ctx.font='bold 16px monospace';
-    ctx.textAlign='left';
-    ctx.fillText('CRASH: ' + e.message, 10, 40);
-    ctx.fillText(e.stack ? e.stack.split('\n').slice(0,4).join(' | ') : '', 10, 70);
-    console.error('Game crash:', e);
-    return; // stop loop on crash
-  }
+  if(state==='playing')   update(dt);
+  if(state==='waveclear') updateWaveClear(dt);
+  render();
   requestAnimationFrame(loop);
 }
 requestAnimationFrame(loop);
