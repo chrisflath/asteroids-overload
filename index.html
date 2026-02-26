@@ -152,6 +152,29 @@ function sndPickup(type) {
 
 function sndDeath() { for(let i=0;i<8;i++) tone(280-i*28,'sawtooth',0.28,0.001,0.04,0.22,i*0.07); }
 
+let engineOsc=null, engineGain=null;
+function startEngineSnd() {
+  try{
+    if(engineOsc) return;
+    const ac=audio();
+    engineOsc=ac.createOscillator(); engineGain=ac.createGain();
+    engineOsc.connect(engineGain); engineGain.connect(ac.destination);
+    engineOsc.type='sawtooth'; engineOsc.frequency.value=72;
+    engineOsc.frequency.setValueAtTime(72,ac.currentTime);
+    engineOsc.frequency.linearRampToValueAtTime(88,ac.currentTime+0.12);
+    engineGain.gain.setValueAtTime(0.001,ac.currentTime);
+    engineGain.gain.linearRampToValueAtTime(0.09,ac.currentTime+0.1);
+    engineOsc.start();
+  }catch(e){}
+}
+function stopEngineSnd() {
+  try{
+    if(!engineOsc) return;
+    engineGain.gain.exponentialRampToValueAtTime(0.001,audioCtx.currentTime+0.18);
+    engineOsc.stop(audioCtx.currentTime+0.19);
+    engineOsc=null; engineGain=null;
+  }catch(e){ engineOsc=null; engineGain=null; }
+}
 let beamOsc=null, beamGain=null;
 function startBeamSnd() {
   try{
@@ -177,7 +200,7 @@ function stopBeamSnd() {
 // ── MUSIC ────────────────────────────────────────────────────────────────────
 // Space-opera chiptune: D major, 124 BPM, orchestral feel (SW/ST inspired)
 let musicOn = true;
-const M_BPM = 124;
+const M_BPM = 136;
 const M_BEAT = 60 / M_BPM;
 const M_16   = M_BEAT / 4; // 16th-note duration
 const D4 = 293.66;
@@ -189,13 +212,15 @@ function mhz(s){ return D4 * Math.pow(2, s/12); }
 const MUSIC_LOOP = 64;
 const MUSIC_NOTES = [
   // ── MELODY (sawtooth, slow attack = string/brass swell) ─────────────────
-  // Long held notes — no rapid runs. D minor: D F G A C
-  [0,  11, mhz(0),  .45,'sawtooth', 0, 0.08],  // D4  — tonic, slow swell
-  [14,  7, mhz(3),  .52,'sawtooth', 0, 0.07],  // F4  — minor 3rd
-  [23, 10, mhz(7),  .63,'sawtooth', 5, 0.07],  // A4  — 5th, peak, vibrato
-  [35,  6, mhz(5),  .56,'sawtooth', 3, 0.06],  // G4  — step down
-  [43,  7, mhz(10), .60,'sawtooth', 4, 0.07],  // C5  — b7 tension
-  [52, 12, mhz(0),  .56,'sawtooth', 5, 0.08],  // D4  — long resolve
+  // D minor: D F G A C — phrases with shape, no rapid runs
+  [0,   6, mhz(0),  .45,'sawtooth', 0, 0.06],  // D4
+  [7,   5, mhz(3),  .52,'sawtooth', 0, 0.05],  // F4
+  [14,  6, mhz(7),  .60,'sawtooth', 3, 0.06],  // A4
+  [22,  7, mhz(12), .70,'sawtooth', 8, 0.06],  // D5  — peak, vibrato
+  [31,  5, mhz(10), .60,'sawtooth', 4, 0.05],  // C5  — tension
+  [38,  5, mhz(7),  .55,'sawtooth', 3, 0.05],  // A4
+  [45,  5, mhz(5),  .50,'sawtooth', 0, 0.05],  // G4
+  [52, 12, mhz(0),  .56,'sawtooth', 5, 0.07],  // D4  — long resolve
 
   // ── BASS (triangle) — one note per bar, harmonic foundation ─────────────
   [0,  15, mhz(-12), .46,'triangle', 0, 0.04], // D3  — bar 1: Dm
@@ -459,7 +484,8 @@ function update(dt) {
   if(rotL) ship.angle-=3.6*dt;
   if(rotR) ship.angle+=3.6*dt;
   ship.thrust=thr;
-  if(thr){ ship.vx+=Math.cos(ship.angle)*300*dt; ship.vy+=Math.sin(ship.angle)*300*dt; }
+  if(thr){ ship.vx+=Math.cos(ship.angle)*300*dt; ship.vy+=Math.sin(ship.angle)*300*dt; startEngineSnd(); }
+  else stopEngineSnd();
   ship.vx*=Math.pow(0.985,dt*60); ship.vy*=Math.pow(0.985,dt*60);
   const spd=Math.hypot(ship.vx,ship.vy); if(spd>420){ ship.vx=ship.vx/spd*420; ship.vy=ship.vy/spd*420; }
   ship.x=((ship.x+ship.vx*dt)%W+W)%W;
@@ -568,7 +594,7 @@ function update(dt) {
 
   if(asteroids.length===0 && novaTimer<=0) {
     state='waveclear'; waveClearTimer=2.6; wave++;
-    stopBeamSnd(); ship.beaming=false;
+    stopBeamSnd(); stopEngineSnd(); ship.beaming=false;
   }
 }
 
