@@ -177,63 +177,53 @@ function stopBeamSnd() {
 // ── MUSIC ────────────────────────────────────────────────────────────────────
 // Space-opera chiptune: D major, 124 BPM, orchestral feel (SW/ST inspired)
 let musicOn = true;
-const M_BPM = 124;
+const M_BPM = 100;
 const M_BEAT = 60 / M_BPM;
 const M_16   = M_BEAT / 4; // 16th-note duration
 const D4 = 293.66;
 function mhz(s){ return D4 * Math.pow(2, s/12); }
 
-// All notes: [tick_in_loop, dur_ticks, freq_hz, vol, osc_type, vibrato_cents]
-// Loop = 64 ticks = 4 bars of 4/4
+// Notes: [tick, dur_ticks, freq, vol, osc_type, vibrato_cents, attack_s]
+// Loop = 64 ticks = 4 bars of 4/4 at 100 BPM
+// Key: D minor — dark, cinematic space-opera feel
 const MUSIC_LOOP = 64;
 const MUSIC_NOTES = [
-  // ── MELODY (sawtooth = strings/brass) ───────────────────────────────────
-  // Bar 1: heroic 3-note fanfare + rise (D D D — F# — A — D5)
-  [0,  2, mhz(0),  .50,'sawtooth',0 ], // D4
-  [2,  2, mhz(0),  .50,'sawtooth',0 ], // D4
-  [4,  2, mhz(0),  .52,'sawtooth',0 ], // D4 (3 short + …)
-  [6,  2, mhz(4),  .58,'sawtooth',0 ], // F#4
-  [8,  4, mhz(7),  .65,'sawtooth',0 ], // A4
-  [12, 4, mhz(12), .75,'sawtooth',8 ], // D5  ← peak, add vibrato
-  // Bar 2: melodic descent + breathing space
-  [16, 2, mhz(9),  .62,'sawtooth',6 ], // B4
-  [18, 2, mhz(7),  .58,'sawtooth',0 ], // A4
-  [20, 2, mhz(5),  .54,'sawtooth',0 ], // G4
-  [22, 2, mhz(4),  .52,'sawtooth',0 ], // F#4
-  [24, 4, mhz(2),  .50,'sawtooth',0 ], // E4
-  [28, 4, mhz(0),  .55,'sawtooth',4 ], // D4 (hold, slight vib)
-  // Bar 3: second phrase — build through Bm area for tension
-  [32, 2, mhz(7),  .55,'sawtooth',0 ], // A4
-  [34, 2, mhz(9),  .60,'sawtooth',0 ], // B4
-  [36, 2, mhz(11), .65,'sawtooth',0 ], // C#5
-  [38, 2, mhz(12), .72,'sawtooth',8 ], // D5 (climax)
-  [40, 2, mhz(9),  .62,'sawtooth',5 ], // B4
-  [42, 2, mhz(7),  .57,'sawtooth',0 ], // A4
-  [44, 2, mhz(5),  .52,'sawtooth',0 ], // G4
-  [46, 2, mhz(4),  .50,'sawtooth',0 ], // F#4
-  // Bar 4: cadence — E4 F#4 then long A4, resolve to D4
-  [48, 2, mhz(2),  .50,'sawtooth',0 ], // E4
-  [50, 2, mhz(4),  .52,'sawtooth',0 ], // F#4
-  [52, 8, mhz(7),  .62,'sawtooth',6 ], // A4 (held 2 beats)
-  [60, 4, mhz(0),  .58,'sawtooth',5 ], // D4 (resolve)
-  // ── BASS (triangle = low strings) ───────────────────────────────────────
-  [0,  7, mhz(-12),.48,'triangle',0], // D3 — tonic
-  [8,  7, mhz(-12),.44,'triangle',0], // D3
-  [16, 8, mhz(-7), .44,'triangle',0], // G3 — IV
-  [24, 8, mhz(-5), .44,'triangle',0], // A3 — V
-  [32, 8, mhz(-3), .44,'triangle',0], // B3 — vi
-  [40, 8, mhz(-7), .44,'triangle',0], // G3 — IV
-  [48, 8, mhz(-12),.48,'triangle',0], // D3 — I
-  [56, 8, mhz(-5), .44,'triangle',0], // A3 — V → resolve
-  // ── COUNTERPOINT / BRASS STABS (square = trumpet) ───────────────────────
-  [6,  2, mhz(4+12),.28,'square',0], // F#5 stab (echoes melody)
-  [14, 2, mhz(7+12),.25,'square',0], // A5 stab
-  [22, 2, mhz(5+12),.25,'square',0], // G5
-  [30, 2, mhz(0+12),.28,'square',0], // D5 punctuation
-  [38, 2, mhz(12+12),.22,'square',0],// D6 (peak accent)
-  [46, 2, mhz(7+12),.24,'square',0], // A5
-  [54, 2, mhz(7+12),.24,'square',0], // A5
-  [62, 2, mhz(4+12),.26,'square',0], // F#5 lead-back
+  // ── MELODY (sawtooth, slow attack = string/brass swell) ─────────────────
+  // Long held notes — no rapid runs. D minor: D F G A C
+  [0,  11, mhz(0),  .45,'sawtooth', 0, 0.08],  // D4  — tonic, slow swell
+  [14,  7, mhz(3),  .52,'sawtooth', 0, 0.07],  // F4  — minor 3rd
+  [23, 10, mhz(7),  .63,'sawtooth', 5, 0.07],  // A4  — 5th, peak, vibrato
+  [35,  6, mhz(5),  .56,'sawtooth', 3, 0.06],  // G4  — step down
+  [43,  7, mhz(10), .60,'sawtooth', 4, 0.07],  // C5  — b7 tension
+  [52, 12, mhz(0),  .56,'sawtooth', 5, 0.08],  // D4  — long resolve
+
+  // ── BASS (triangle) — one note per bar, harmonic foundation ─────────────
+  [0,  15, mhz(-12), .46,'triangle', 0, 0.04], // D3  — bar 1: Dm
+  [16, 15, mhz(-16), .43,'triangle', 0, 0.04], // Bb2 — bar 2: bVI (cinematic)
+  [32, 15, mhz(-19), .43,'triangle', 0, 0.04], // G2  — bar 3: iv
+  [48, 15, mhz(-17), .46,'triangle', 0, 0.04], // A2  — bar 4: V → tension
+
+  // ── INNER VOICE (triangle, mid) — harmonic fill in the gaps ─────────────
+  [8,  5, mhz(7),    .28,'triangle', 0, 0.05], // A4  — fills after D4
+  [21, 5, mhz(3+12), .26,'triangle', 0, 0.05], // F5  — against A4 peak
+  [40, 5, mhz(0),    .26,'triangle', 0, 0.05], // D4  — against G4
+  [50, 5, mhz(3),    .28,'triangle', 0, 0.05], // F4  — pre-resolve colour
+
+  // ── RHYTHMIC PULSE (square, deep register) — cinematic heartbeat ─────────
+  // Half-bar pulse (every 8 ticks). Low pitch = timpani feel, not melodic.
+  [0,  2, mhz(-24), .22,'square'],   // D2 — bar 1 downbeat (strong)
+  [8,  2, mhz(-24), .15,'square'],   // D2 — bar 1 backbeat
+  [16, 2, mhz(-24), .22,'square'],   // D2 — bar 2 downbeat
+  [24, 2, mhz(-24), .15,'square'],   // D2 — bar 2 backbeat
+  [32, 2, mhz(-22), .22,'square'],   // E2 — bar 3 (pitch shift adds tension)
+  [40, 2, mhz(-22), .15,'square'],   // E2 — bar 3 backbeat
+  [48, 2, mhz(-17), .22,'square'],   // A2 — bar 4 (matches dominant bass)
+  [56, 2, mhz(-17), .15,'square'],   // A2 — bar 4 backbeat
+
+  // ── BRASS STABS (square, sharp attack) — 3 big accents only ────────────
+  [0,  2, mhz(12),  .28,'square'],   // D5 — opening fanfare hit
+  [32, 2, mhz(17),  .24,'square'],   // A5 — halfway dramatic accent
+  [52, 3, mhz(7),   .26,'square'],   // A4 — leads into the resolve
 ].sort((a,b)=>a[0]-b[0]);
 
 let musicScheduledTick = 0;
@@ -241,7 +231,7 @@ let musicAcStartTime  = 0;
 let musicActive = false;
 let musicTimer  = null;
 
-function playMusicNote(freq,type,vol,dur,when,vib=0) {
+function playMusicNote(freq,type,vol,dur,when,vib=0,atk=0.02) {
   try {
     const ac=audio();
     const osc=ac.createOscillator(), g=ac.createGain();
@@ -254,7 +244,7 @@ function playMusicNote(freq,type,vol,dur,when,vib=0) {
       lfo.start(when+dur*0.35); lfo.stop(when+dur+0.1);
     }
     g.gain.setValueAtTime(0,when);
-    g.gain.linearRampToValueAtTime(vol,when+0.02);
+    g.gain.linearRampToValueAtTime(vol,when+atk);
     g.gain.setValueAtTime(vol,when+dur*0.75);
     g.gain.exponentialRampToValueAtTime(0.001,when+dur);
     osc.start(when); osc.stop(when+dur+0.05);
@@ -272,8 +262,8 @@ function runMusicScheduler() {
       const tick = musicScheduledTick % MUSIC_LOOP;
       const when = musicAcStartTime + musicScheduledTick * M_16;
       if(when >= now - 0.01) {
-        for(const [t,dur,freq,vol,type,vib] of MUSIC_NOTES) {
-          if(t===tick) playMusicNote(freq,type,vol,dur*M_16*0.88,when,vib);
+        for(const [t,dur,freq,vol,type,vib=0,atk=0.02] of MUSIC_NOTES) {
+          if(t===tick) playMusicNote(freq,type,vol,dur*M_16*0.88,when,vib,atk);
         }
       }
       musicScheduledTick++;
