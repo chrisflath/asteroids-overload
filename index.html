@@ -34,7 +34,7 @@ const WD = {
   nova:   { name:'NOVA BOMB',   col:'#ffffff', shots:0, spread:0,    spd:0,   sz:0,  dmg:99,  cd:0,    ammo:1,   nova:true  },
 };
 
-const PICKUP_TABLE = [['rapid',28],['twin',23],['spread',18],['plasma',14],['seeker',10],['beam',6],['nova',1]];
+const PICKUP_TABLE = [['rapid',24],['twin',20],['spread',16],['plasma',12],['seeker',9],['beam',5],['nova',1],['shield',18]];
 const PT_TOTAL = PICKUP_TABLE.reduce((s,[,w])=>s+w,0);
 function randWeapon() {
   let r = Math.random()*PT_TOTAL;
@@ -50,11 +50,11 @@ let novaTimer=0, waveClearTimer=0;
 
 const ship = {
   x:0,y:0,vx:0,vy:0, angle:-Math.PI/2,
-  invincible:0, thrust:false,
+  invincible:0, thrust:false, shield:0,
   weapon:'laser', ammo:{}, fireCd:0, beaming:false,
   reset() {
     this.x=W/2; this.y=H/2; this.vx=0; this.vy=0;
-    this.angle=-Math.PI/2; this.invincible=3; this.thrust=false;
+    this.angle=-Math.PI/2; this.invincible=3; this.thrust=false; this.shield=0;
     this.weapon='laser'; this.ammo={}; this.fireCd=0; this.beaming=false;
   }
 };
@@ -151,6 +151,7 @@ function sndPickup(type) {
 }
 
 function sndDeath() { for(let i=0;i<8;i++) tone(280-i*28,'sawtooth',0.28,0.001,0.04,0.22,i*0.07); }
+function sndShieldHit() { tone(660,'sine',0.35,0.001,0.04,0.28); tone(880,'sine',0.20,0.001,0.02,0.18,0.04); }
 
 let engineOsc=null, engineGain=null;
 function startEngineSnd() {
@@ -221,6 +222,17 @@ const MUSIC_NOTES = [
   [44,  6, mhz(7),  .55,'sawtooth', 3, 0.05],  // A4
   [51,  5, mhz(5),  .50,'sawtooth', 0, 0.05],  // G4
   [58,  6, mhz(0),  .56,'sawtooth', 5, 0.07],  // D4  — resolve
+
+  // ── POLYPHONIC OVERLAY (triangle) — harmony a 3rd/5th above melody ───────
+  // Enters slightly after melody note for a choir/strings swell effect
+  [2,   7, mhz(7),  .28,'triangle', 0, 0.07],  // A4 (5th above D4)
+  [11,  6, mhz(10), .26,'triangle', 0, 0.06],  // C5 (5th above F4)
+  [19,  7, mhz(12), .30,'triangle', 3, 0.07],  // D5 (4th above A4)
+  [29,  7, mhz(17), .32,'triangle', 6, 0.07],  // A5 (5th above D5 — peak harmony)
+  [39,  5, mhz(15), .26,'triangle', 3, 0.06],  // F5 (4th above C5)
+  [46,  5, mhz(12), .24,'triangle', 0, 0.06],  // D5 (4th above A4)
+  [53,  4, mhz(10), .22,'triangle', 0, 0.05],  // C5 (4th above G4)
+  [60,  5, mhz(7),  .26,'triangle', 4, 0.07],  // A4 (5th above D4 resolve)
 
   // ── BASS (triangle) — one note per bar, harmonic foundation ─────────────
   [0,  15, mhz(-12), .46,'triangle', 0, 0.04], // D3  — bar 1: Dm
@@ -582,7 +594,15 @@ function update(dt) {
   if(ship.invincible>0){ ship.invincible-=dt; }
   else {
     for(const a of asteroids){
-      if(Math.hypot(ship.x-a.x,ship.y-a.y)<a.r+11){ killShip(); break; }
+      if(Math.hypot(ship.x-a.x,ship.y-a.y)<a.r+11){
+        if(ship.shield>0){
+          ship.shield--;
+          ship.invincible=1.8;
+          sndShieldHit();
+          explode(ship.x,ship.y,14,120,'#44ffff',0.6,2);
+        } else { killShip(); }
+        break;
+      }
     }
   }
 
@@ -622,6 +642,7 @@ function killShip() {
 function collectPickup(type) {
   sndPickup(type);
   if(type==='nova'){ activateNova(); return; }
+  if(type==='shield'){ ship.shield=Math.min(ship.shield+3,9); explode(ship.x,ship.y,10,90,'#44ffff',0.5,2); return; }
   const def=WD[type];
   ship.weapon=type;
   ship.ammo[type]=def.ammo+(ship.ammo[type]??0);
@@ -687,10 +708,19 @@ function renderShip() {
   ctx.beginPath(); ctx.moveTo(16,0); ctx.lineTo(-12,-10); ctx.lineTo(-7,0); ctx.lineTo(-12,10); ctx.closePath();
   ctx.strokeStyle='#ddd'; ctx.lineWidth=2; ctx.stroke();
   ctx.fillStyle='rgba(255,255,255,0.06)'; ctx.fill();
-  // Shield ring when invincible
-  if(ship.invincible>0){
+  // Invincibility ring
+  if(ship.invincible>0 && ship.shield===0){
     ctx.beginPath(); ctx.arc(0,0,20,0,Math.PI*2);
     ctx.strokeStyle=`rgba(100,200,255,${0.4+0.2*Math.sin(Date.now()*0.01)})`; ctx.lineWidth=2; ctx.stroke();
+  }
+  // Shield bubble — pulsing cyan, thickness scales with charges
+  if(ship.shield>0){
+    const pulse=0.5+0.5*Math.sin(Date.now()*0.006);
+    const r=22+ship.shield*1.5;
+    ctx.beginPath(); ctx.arc(0,0,r,0,Math.PI*2);
+    ctx.strokeStyle=`rgba(68,255,255,${0.5+0.35*pulse})`; ctx.lineWidth=1.5+ship.shield*0.4; ctx.stroke();
+    ctx.beginPath(); ctx.arc(0,0,r+4,0,Math.PI*2);
+    ctx.strokeStyle=`rgba(68,255,255,${0.15*pulse})`; ctx.lineWidth=6; ctx.stroke();
   }
   ctx.restore();
 }
@@ -751,23 +781,22 @@ function renderBullets() {
   ctx.shadowBlur=0; ctx.restore();
 }
 
+const PICKUP_META = { shield:{ col:'#44ffff', label:'SHD' } };
+function pickupDef(type){ return PICKUP_META[type] ?? { col: WD[type]?.col??'#fff', label: type.slice(0,3).toUpperCase() }; }
+
 function renderPickups() {
   for(const p of pickups){
-    const def=WD[p.type];
+    const def=pickupDef(p.type);
     const r=15+Math.sin(p.pulse)*3.5;
     const alpha=p.life<2 ? p.life/2 : 1;
     ctx.save(); ctx.globalAlpha=alpha; ctx.translate(p.x,p.y); ctx.rotate(p.angle);
-    // Ring
     ctx.beginPath(); ctx.arc(0,0,r,0,Math.PI*2);
     ctx.strokeStyle=def.col; ctx.lineWidth=2; ctx.stroke();
-    // Glow fill
     const g=ctx.createRadialGradient(0,0,0,0,0,r);
     g.addColorStop(0,def.col+'44'); g.addColorStop(1,'transparent');
     ctx.fillStyle=g; ctx.fill();
-    // Label
-    const labels={rapid:'RFR',twin:'TWN',spread:'SPR',plasma:'PLM',seeker:'SKR',beam:'BEM',nova:'NOV'};
     ctx.fillStyle='#fff'; ctx.font="bold 8px 'Courier New',monospace"; ctx.textAlign='center'; ctx.textBaseline='middle';
-    ctx.fillText(labels[p.type]||'???',0,0);
+    ctx.fillText(def.label,0,0);
     ctx.restore();
   }
 }
@@ -803,10 +832,16 @@ function renderHUD() {
   ctx.textAlign='right'; ctx.fillStyle='#f44';
   ctx.fillText('♥'.repeat(lives),W-14,24);
 
+  // Shield charges
+  if(ship.shield>0){
+    ctx.fillStyle='#44ffff';
+    ctx.fillText('⬡'.repeat(ship.shield),W-14,40);
+  }
+
   // Music toggle
   ctx.fillStyle=musicOn?'#aaa':'#444';
   ctx.font=`${fs}px 'Courier New',monospace`;
-  ctx.fillText(musicOn?'♪':'♪',W-14,44);
+  ctx.fillText(musicOn?'♪':'♪',W-14,ship.shield>0?56:44);
 
   // Weapon + ammo — centered at top below wave
   const def=WD[ship.weapon];
