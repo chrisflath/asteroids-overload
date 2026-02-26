@@ -177,7 +177,7 @@ function stopBeamSnd() {
 // ── MUSIC ────────────────────────────────────────────────────────────────────
 // Space-opera chiptune: D major, 124 BPM, orchestral feel (SW/ST inspired)
 let musicOn = true;
-const M_BPM = 116;
+const M_BPM = 124;
 const M_BEAT = 60 / M_BPM;
 const M_16   = M_BEAT / 4; // 16th-note duration
 const D4 = 293.66;
@@ -782,18 +782,18 @@ function renderHUD() {
   ctx.font=`${fs}px 'Courier New',monospace`;
   ctx.fillText(musicOn?'♪':'♪',W-14,44);
 
-  // Weapon
+  // Weapon + ammo — centered at top below wave
   const def=WD[ship.weapon];
   const ammo=ship.ammo[ship.weapon]===undefined?'∞':Math.ceil(ship.ammo[ship.weapon]);
-  ctx.textAlign='right'; ctx.fillStyle=def.col;
+  ctx.textAlign='center'; ctx.fillStyle=def.col;
   ctx.font=`bold ${fs}px 'Courier New',monospace`;
-  ctx.fillText(`[${def.name}]  ${ammo}`,W-14,H-16);
+  ctx.fillText(`[${def.name}]  ${ammo}`,W/2,44);
 
-  // Ammo bar for beam
+  // Ammo bar for beam — centered under the label
   if(ship.weapon==='beam'){
     const bw=130, ratio=(ship.ammo['beam']??WD.beam.ammo)/WD.beam.ammo;
-    ctx.fillStyle='#333'; ctx.fillRect(W-14-bw,H-36,bw,5);
-    ctx.fillStyle='#f44'; ctx.fillRect(W-14-bw,H-36,bw*ratio,5);
+    ctx.fillStyle='#333'; ctx.fillRect(W/2-bw/2,50,bw,4);
+    ctx.fillStyle='#f44'; ctx.fillRect(W/2-bw/2,50,bw*ratio,4);
   }
 }
 
