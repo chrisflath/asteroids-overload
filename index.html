@@ -159,11 +159,11 @@ function startEngineSnd() {
     const ac=audio();
     engineOsc=ac.createOscillator(); engineGain=ac.createGain();
     engineOsc.connect(engineGain); engineGain.connect(ac.destination);
-    engineOsc.type='sawtooth'; engineOsc.frequency.value=72;
-    engineOsc.frequency.setValueAtTime(72,ac.currentTime);
-    engineOsc.frequency.linearRampToValueAtTime(88,ac.currentTime+0.12);
+    engineOsc.type='sawtooth'; engineOsc.frequency.value=110;
+    engineOsc.frequency.setValueAtTime(110,ac.currentTime);
+    engineOsc.frequency.linearRampToValueAtTime(130,ac.currentTime+0.15);
     engineGain.gain.setValueAtTime(0.001,ac.currentTime);
-    engineGain.gain.linearRampToValueAtTime(0.09,ac.currentTime+0.1);
+    engineGain.gain.linearRampToValueAtTime(0.20,ac.currentTime+0.12);
     engineOsc.start();
   }catch(e){}
 }
@@ -213,14 +213,14 @@ const MUSIC_LOOP = 64;
 const MUSIC_NOTES = [
   // ── MELODY (sawtooth, slow attack = string/brass swell) ─────────────────
   // D minor: D F G A C — phrases with shape, no rapid runs
-  [0,   6, mhz(0),  .45,'sawtooth', 0, 0.06],  // D4
-  [7,   5, mhz(3),  .52,'sawtooth', 0, 0.05],  // F4
-  [14,  6, mhz(7),  .60,'sawtooth', 3, 0.06],  // A4
-  [22,  7, mhz(12), .70,'sawtooth', 8, 0.06],  // D5  — peak, vibrato
-  [31,  5, mhz(10), .60,'sawtooth', 4, 0.05],  // C5  — tension
-  [38,  5, mhz(7),  .55,'sawtooth', 3, 0.05],  // A4
-  [45,  5, mhz(5),  .50,'sawtooth', 0, 0.05],  // G4
-  [52, 12, mhz(0),  .56,'sawtooth', 5, 0.07],  // D4  — long resolve
+  [0,   8, mhz(0),  .45,'sawtooth', 0, 0.06],  // D4
+  [9,   7, mhz(3),  .52,'sawtooth', 0, 0.05],  // F4
+  [17,  8, mhz(7),  .60,'sawtooth', 3, 0.06],  // A4
+  [27,  8, mhz(12), .70,'sawtooth', 8, 0.06],  // D5  — peak, vibrato
+  [37,  6, mhz(10), .60,'sawtooth', 4, 0.05],  // C5  — tension
+  [44,  6, mhz(7),  .55,'sawtooth', 3, 0.05],  // A4
+  [51,  5, mhz(5),  .50,'sawtooth', 0, 0.05],  // G4
+  [58,  6, mhz(0),  .56,'sawtooth', 5, 0.07],  // D4  — resolve
 
   // ── BASS (triangle) — one note per bar, harmonic foundation ─────────────
   [0,  15, mhz(-12), .46,'triangle', 0, 0.04], // D3  — bar 1: Dm
