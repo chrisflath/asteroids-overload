@@ -51,12 +51,12 @@ let novaTimer=0, waveClearTimer=0;
 const SHIELD_MAX = {f:2, r:1, b:1, l:1};
 const ship = {
   x:0,y:0,vx:0,vy:0, angle:-Math.PI/2,
-  invincible:0, thrust:false, shield:{f:0,r:0,b:0,l:0},
+  invincible:0, thrust:false, shield:{...SHIELD_MAX},
   weapon:'laser', ammo:{}, fireCd:0, beaming:false,
   reset() {
     this.x=W/2; this.y=H/2; this.vx=0; this.vy=0;
     this.angle=-Math.PI/2; this.invincible=3; this.thrust=false;
-    this.shield={f:0,r:0,b:0,l:0};
+    this.shield={...SHIELD_MAX};
     this.weapon='laser'; this.ammo={}; this.fireCd=0; this.beaming=false;
   }
 };
