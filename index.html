@@ -520,7 +520,7 @@ function update(dt) {
   particles=particles.filter(p=>p.life>0);
 
   // ── COLLISION: bullets vs asteroids ─────────────────────────
-  const killBullets=new Set(), killAsts=[], newAsts=[];
+  const killBullets=new Set(), killAsts=new Set(), newAsts=[];
   for(let bi=0;bi<bullets.length;bi++){
     const b=bullets[bi];
     for(let ai=0;ai<asteroids.length;ai++){
@@ -538,8 +538,8 @@ function update(dt) {
             }
           }
         }
-        if(a.hp<=0){
-          killAsts.push(ai);
+        if(a.hp<=0 && !killAsts.has(ai)){   // guard: only process each asteroid once
+          killAsts.add(ai);
           score+=scoreAst(a); if(score>hiScore) hiScore=score;
           sndExplosion(a.size);
           explode(a.x,a.y,7*a.size,65*a.size,'#f84',0.5*a.size,2);
@@ -551,8 +551,7 @@ function update(dt) {
       }
     }
   }
-  const killAstSet=new Set(killAsts);
-  asteroids=asteroids.filter((_,i)=>!killAstSet.has(i));
+  asteroids=asteroids.filter((_,i)=>!killAsts.has(i));
   asteroids.push(...newAsts);
   bullets=bullets.filter((_,i)=>!killBullets.has(i));
 
