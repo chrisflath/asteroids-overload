@@ -915,9 +915,20 @@ function renderVirtualButtons() {
 let lastT=0;
 function loop(t) {
   const dt=Math.min((t-lastT)/1000,0.05); lastT=t;
-  if(state==='playing')   update(dt);
-  if(state==='waveclear') updateWaveClear(dt);
-  render();
+  try {
+    if(state==='playing')   update(dt);
+    if(state==='waveclear') updateWaveClear(dt);
+    render();
+  } catch(e) {
+    // Show crash on screen so we can diagnose
+    ctx.fillStyle='#000'; ctx.fillRect(0,0,W,H);
+    ctx.fillStyle='#f44'; ctx.font='bold 16px monospace';
+    ctx.textAlign='left';
+    ctx.fillText('CRASH: ' + e.message, 10, 40);
+    ctx.fillText(e.stack ? e.stack.split('\n').slice(0,4).join(' | ') : '', 10, 70);
+    console.error('Game crash:', e);
+    return; // stop loop on crash
+  }
   requestAnimationFrame(loop);
 }
 requestAnimationFrame(loop);
